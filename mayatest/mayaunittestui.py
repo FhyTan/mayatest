@@ -16,9 +16,7 @@ import os
 import sys
 import traceback
 import unittest
-import webbrowser
 
-import PySide2
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -112,7 +110,6 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle("Maya Unit Test Runner")
         self.resize(1000, 600)
-        self.rollback_importer = RollbackImporter()
 
         toolbar = self.addToolBar("Tools")
         action = toolbar.addAction("Run All Tests")
@@ -140,7 +137,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         action.triggered.connect(self.refresh_tests)
 
         self.module_line = FileLine()
-        toolbar.addWidget(QLabel("Module Test Path:"))
+        toolbar.addWidget(QLabel("Module Path:"))
         spacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
         toolbar.addWidget(QLabel())
         toolbar.addWidget(self.module_line)
@@ -182,11 +179,10 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         splitter.setStretchFactor(1, 4)
         self.stream = TestCaptureStream(self.output_console)
 
-        self.refresh_tests()
         self.init_gui()
 
     def refresh_tests(self):
-        self.reset_rollback_importer()
+        self._reload_modules()
 
         test_suite = mayaunittest.get_module_tests(module_root=self.module_line.path)
 
@@ -208,11 +204,10 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
 
     def run_all_tests(self):
         """Callback method to run all the tests found in MAYA_MODULE_PATH."""
-        self.reset_rollback_importer()
-        test_suite = unittest.TestSuite()
-
-        # Module test path
-        print("module test path: {}".format(self.module_line.path))
+        if not hasattr(self, "model"):
+            self.refresh_tests()
+        else:
+            self._reload_modules()
 
         # Get all the tests
         test_suite = mayaunittest.get_module_tests(module_root=self.module_line.path)
@@ -222,7 +217,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
 
     def run_selected_tests(self):
         """Callback method to run the selected tests in the UI."""
-        self.reset_rollback_importer()
+        self._reload_modules()
         test_suite = unittest.TestSuite()
 
         indices = self.test_view.selectedIndexes()
@@ -244,31 +239,43 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
 
         # Now get the tests with the pruned paths
         for path in test_paths:
-            mayaunittest.get_tests(test=path, test_suite=test_suite)
+            mayaunittest.get_tests(
+                directories=[self.module_line.path],
+                test=path,
+                test_suite=test_suite,
+            )
 
         self.output_console.clear()
         self.model.run_tests(self.stream, test_suite)
 
     def run_failed_tests(self):
         """Callback method to run all the tests with fail or error statuses."""
-        self.reset_rollback_importer()
+        self._reload_modules()
         test_suite = unittest.TestSuite()
         for node in self.model.node_lookup.values():
             if isinstance(node.test, unittest.TestCase) and node.get_status() in {
                 TestStatus.fail,
                 TestStatus.error,
             }:
-                mayaunittest.get_tests(test=node.path(), test_suite=test_suite)
+                mayaunittest.get_tests(
+                    directories=[self.module_line.path],
+                    test=node.path(),
+                    test_suite=test_suite,
+                )
         self.output_console.clear()
         self.model.run_tests(self.stream, test_suite)
 
-    def reset_rollback_importer(self):
-        """Resets the RollbackImporter which allows the test runner to pick up code
-        updates without having to reload anything."""
-        if self.rollback_importer:
-            self.rollback_importer.uninstall()
-        # Create a new rollback importer to pick up any code updates
-        self.rollback_importer = RollbackImporter()
+    def _reload_modules(self):
+        """Reloads all the modules in the module path."""
+        module_path = self.module_line.path
+        if not module_path:
+            QMessageBox.warning(
+                self,
+                "No Module Path",
+                "Please set the module path to run tests.",
+                QMessageBox.Ok,
+            )
+        mayaunittest.reload_modules(self.module_line.path)
 
     def init_gui(self):
         settings = QSettings("AutodeskMaya", "Unit Test Runner")
@@ -287,7 +294,6 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
     def closeEvent(self, event):
         """Close event to clean up everything."""
         global _win
-        self.rollback_importer.uninstall()
         self.deleteLater()
         _win = None
 
@@ -538,28 +544,3 @@ class TestTreeModel(QAbstractItemModel):
             index = self.get_index_of_node(node)
             self.setData(index, reason, Qt.ToolTipRole)
             self.setData(index, status, Qt.DecorationRole)
-
-
-class RollbackImporter(object):
-    """Used to remove imported modules from the module list.
-
-    This allows tests to be rerun after code updates without doing any reloads.
-    Original idea from: http://pyunit.sourceforge.net/notes/reloading.html
-
-    Usage:
-    def run_tests(self):
-        if self.rollback_importer:
-            self.rollback_importer.uninstall()
-        self.rollback_importer = RollbackImporter()
-        self.load_and_execute_tests()
-    """
-
-    def __init__(self):
-        """Creates an instance and installs as the global importer."""
-        self.previous_modules = set(sys.modules.keys())
-
-    def uninstall(self):
-        for modname in list(sys.modules.keys()):
-            if modname not in self.previous_modules:
-                # Force reload when modname next imported
-                del sys.modules[modname]

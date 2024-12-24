@@ -31,6 +31,7 @@ cmt.test.run_tests(test='test_sample.SampleTests.test_create_sphere')
 cmt.test.run_tests()
 """
 
+import inspect
 import logging
 import os
 import shutil
@@ -44,9 +45,30 @@ import maya.cmds as cmds
 # The environment variable that signifies tests are being run with the custom TestResult class.
 CMT_TESTING_VAR = "CMT_UNITTEST"
 
+logger = logging.getLogger(__name__)
+
 
 def new_scene():
     cmds.file(f=True, new=True)
+
+
+def reload_modules(user_path: str):
+    """Reload all modules that belong to the given path.
+
+    @param user_path: The path to the modules to reload.
+    """
+    if not user_path:
+        return
+
+    user_path = user_path.lower().replace("\\", "/")
+    for name, module in list(sys.modules.items()):
+        try:
+            module_file_path = inspect.getfile(module).lower().replace("\\", "/")
+            if module_file_path.startswith(user_path):
+                logger.info(f"reload module: {name}")
+                del sys.modules[name]
+        except:
+            pass
 
 
 def run_tests(directories=None, test=None, test_suite=None):
@@ -65,15 +87,13 @@ def run_tests(directories=None, test=None, test_suite=None):
     runner.run(test_suite)
 
 
-def get_module_tests(module_root, test_patteren="test_*.py"):
+def get_module_tests(module_root, pattern="test_*.py"):
     """Search for tests in this single module"""
 
     test_suite = unittest.TestSuite()
     directories_added_to_path = []
 
-    discovered_suite = unittest.TestLoader().discover(
-        module_root, pattern=test_patteren
-    )
+    discovered_suite = unittest.TestLoader().discover(module_root, pattern=pattern)
 
     if discovered_suite.countTestCases():
         test_suite.addTests(discovered_suite)
@@ -85,18 +105,17 @@ def get_module_tests(module_root, test_patteren="test_*.py"):
     return test_suite
 
 
-def get_tests(directories=None, test=None, test_suite=None, test_patteren="test_*.py"):
+def get_tests(directories, test=None, test_suite=None, pattern="test_*.py"):
     """Get a unittest.TestSuite containing all the desired tests.
 
-    @param directories: Optional list of directories with which to search for tests.  If omitted, use all "tests"
-    directories of the modules found in the MAYA_MODULE_PATH.
+    @param directories: The list of directories with which to search for tests.
     @param test: Optional test path to find a specific test such as 'test_mytest.SomeTestCase.test_function'.
     @param test_suite: Optional unittest.TestSuite to add the discovered tests to.  If omitted a new TestSuite will be
     created.
     @return: The populated TestSuite.
     """
     if directories is None:
-        directories = maya_module_tests()
+        raise ValueError("directories must be specified.")
 
     # Populate a TestSuite with all the tests
     if test_suite is None:
@@ -112,7 +131,7 @@ def get_tests(directories=None, test=None, test_suite=None, test_patteren="test_
         # Find all tests to run
         directories_added_to_path = []
         for p in directories:
-            discovered_suite = unittest.TestLoader().discover(p, pattern=test_patteren)
+            discovered_suite = unittest.TestLoader().discover(p, pattern=pattern)
             if discovered_suite.countTestCases():
                 test_suite.addTests(discovered_suite)
 
@@ -121,14 +140,6 @@ def get_tests(directories=None, test=None, test_suite=None, test_patteren="test_
         sys.path.remove(path)
 
     return test_suite
-
-
-def maya_module_tests():
-    """Generator function to iterate over all the Maya module tests directories."""
-    for path in os.environ["MAYA_MODULE_PATH"].split(os.pathsep):
-        p = "{0}/tests".format(path)
-        if os.path.exists(p):
-            yield p
 
 
 class Settings(object):

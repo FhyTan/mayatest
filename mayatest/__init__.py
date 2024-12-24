@@ -24,7 +24,7 @@ def reload_modules(user_path=None):
 
             # find modules in the user path and add them to delete
             if module_file_path.startswith(user_path):
-                print("removing module: {}".format(key))
+                print("reload module: {}".format(key))
                 to_delete.append(key)
 
         except:
