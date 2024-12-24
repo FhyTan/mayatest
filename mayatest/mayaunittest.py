@@ -30,13 +30,15 @@ cmt.test.run_tests(test='test_sample.SampleTests.test_create_sphere')
 # To run all tests
 cmt.test.run_tests()
 """
+
+import logging
 import os
 import shutil
 import sys
-import unittest
 import tempfile
+import unittest
 import uuid
-import logging
+
 import maya.cmds as cmds
 
 # The environment variable that signifies tests are being run with the custom TestResult class.
@@ -63,15 +65,15 @@ def run_tests(directories=None, test=None, test_suite=None):
     runner.run(test_suite)
 
 
-def get_module_tests(module_root, test_patteren='test_*.py'):
-    """ Search for tests in this single module
-    """
+def get_module_tests(module_root, test_patteren="test_*.py"):
+    """Search for tests in this single module"""
 
     test_suite = unittest.TestSuite()
     directories_added_to_path = []
 
     discovered_suite = unittest.TestLoader().discover(
-        module_root, pattern=test_patteren)
+        module_root, pattern=test_patteren
+    )
 
     if discovered_suite.countTestCases():
         test_suite.addTests(discovered_suite)
@@ -83,7 +85,7 @@ def get_module_tests(module_root, test_patteren='test_*.py'):
     return test_suite
 
 
-def get_tests(directories=None, test=None, test_suite=None, test_patteren='test_*.py'):
+def get_tests(directories=None, test=None, test_suite=None, test_patteren="test_*.py"):
     """Get a unittest.TestSuite containing all the desired tests.
 
     @param directories: Optional list of directories with which to search for tests.  If omitted, use all "tests"
@@ -135,8 +137,7 @@ class Settings(object):
     # Specifies where files generated during tests should be stored
     # Use a uuid subdirectory so tests that are running concurrently such as on a build server
     # do not conflict with each other.
-    temp_dir = os.path.join(tempfile.gettempdir(),
-                            "mayaunittest", str(uuid.uuid4()))
+    temp_dir = os.path.join(tempfile.gettempdir(), "mayaunittest", str(uuid.uuid4()))
 
     # Controls whether temp files should be deleted after running all tests in the test case
     delete_files = True
@@ -346,14 +347,10 @@ class ScriptEditorState(object):
     def suppress_output(cls):
         """Hides all script editor output."""
         if Settings.buffer_output:
-            cls.suppress_results = cmds.scriptEditorInfo(
-                q=True, suppressResults=True)
-            cls.suppress_errors = cmds.scriptEditorInfo(
-                q=True, suppressErrors=True)
-            cls.suppress_warnings = cmds.scriptEditorInfo(
-                q=True, suppressWarnings=True)
-            cls.suppress_info = cmds.scriptEditorInfo(
-                q=True, suppressInfo=True)
+            cls.suppress_results = cmds.scriptEditorInfo(q=True, suppressResults=True)
+            cls.suppress_errors = cmds.scriptEditorInfo(q=True, suppressErrors=True)
+            cls.suppress_warnings = cmds.scriptEditorInfo(q=True, suppressWarnings=True)
+            cls.suppress_info = cmds.scriptEditorInfo(q=True, suppressInfo=True)
             cmds.scriptEditorInfo(
                 e=True,
                 suppressResults=True,

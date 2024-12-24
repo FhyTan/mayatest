@@ -12,8 +12,8 @@ def reload_modules(user_path=None):
     # loop over the modules and add ones belonging to this path to the
     # delete list
     to_delete = []
-    print('\n---')
-    for key, module in sys.modules.iteritems():
+    print("\n---")
+    for key, module in sys.modules.items():
         try:
             # Get the path to the module
             module_file_path = inspect.getfile(module).lower()
@@ -24,7 +24,7 @@ def reload_modules(user_path=None):
 
             # find modules in the user path and add them to delete
             if module_file_path.startswith(user_path):
-                print('removing module: {}'.format(key))
+                print("removing module: {}".format(key))
                 to_delete.append(key)
 
         except:
@@ -32,14 +32,15 @@ def reload_modules(user_path=None):
 
     # delete these modules
     for module in to_delete:
-        del (sys.modules[module])
+        del sys.modules[module]
 
-    print('---\n')
+    print("---\n")
 
 
 def start():
     reload_modules()
 
     # start the main window
-    import mayaunittestui
+    import mayatest.mayaunittestui as mayaunittestui
+
     mayaunittestui.show()

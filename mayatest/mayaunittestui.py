@@ -8,9 +8,8 @@ run.
 
 To open the dialog run the menu item: CMT > Utility > Unit Test Runner.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+
+from __future__ import absolute_import, division, print_function
 
 import logging
 import os
@@ -19,20 +18,19 @@ import traceback
 import unittest
 import webbrowser
 
-from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-
 import PySide2
+from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 import mayatest.mayaunittest as mayaunittest
-from mayatest.mayaunittest import new_scene
 from mayatest.FileLine import FileLine
+from mayatest.mayaunittest import new_scene
 
 logger = logging.getLogger(__name__)
 
-ICON_DIR = os.path.join(os.path.dirname(__file__), 'icons')
+ICON_DIR = os.path.join(os.path.dirname(__file__), "icons")
 
 _win = None
 
@@ -118,8 +116,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
 
         toolbar = self.addToolBar("Tools")
         action = toolbar.addAction("Run All Tests")
-        action.setIcon(
-            QIcon(QPixmap(os.path.join(ICON_DIR, "cmt_run_all_tests.png"))))
+        action.setIcon(QIcon(QPixmap(os.path.join(ICON_DIR, "cmt_run_all_tests.png"))))
         action.triggered.connect(self.run_all_tests)
         action.setToolTip("Run all tests.")
 
@@ -143,9 +140,8 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         action.triggered.connect(self.refresh_tests)
 
         self.module_line = FileLine()
-        toolbar.addWidget(QLabel('Module Test Path:'))
-        spacer = QSpacerItem(10, 10, QSizePolicy.Minimum,
-                             QSizePolicy.Expanding)
+        toolbar.addWidget(QLabel("Module Test Path:"))
+        spacer = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
         toolbar.addWidget(QLabel())
         toolbar.addWidget(self.module_line)
 
@@ -154,19 +150,17 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         vbox = QVBoxLayout(widget)
 
         # Settings
-        self.new_scene_checkbox = QCheckBox('New Scene Between Tests')
+        self.new_scene_checkbox = QCheckBox("New Scene Between Tests")
         self.new_scene_checkbox.setChecked(mayaunittest.Settings.file_new)
         self.new_scene_checkbox.toggled.connect(mayaunittest.set_file_new)
-        self.new_scene_checkbox.setToolTip(
-            "Creates a new scene file after each test.")
+        self.new_scene_checkbox.setToolTip("Creates a new scene file after each test.")
 
-        self.buffer_checkbox = QCheckBox('Buffer Output')
+        self.buffer_checkbox = QCheckBox("Buffer Output")
         self.buffer_checkbox.setChecked(mayaunittest.Settings.buffer_output)
         self.buffer_checkbox.toggled.connect(mayaunittest.set_buffer_output)
-        self.buffer_checkbox.setToolTip(
-            "Only display output during a failed test.")
+        self.buffer_checkbox.setToolTip("Only display output during a failed test.")
 
-        self.new_scene_btn = QPushButton('New Scene')
+        self.new_scene_btn = QPushButton("New Scene")
         self.new_scene_btn.clicked.connect(new_scene)
 
         settings_layout = QHBoxLayout()
@@ -194,8 +188,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
     def refresh_tests(self):
         self.reset_rollback_importer()
 
-        test_suite = mayaunittest.get_module_tests(
-            module_root=self.module_line.path)
+        test_suite = mayaunittest.get_module_tests(module_root=self.module_line.path)
 
         root_node = TestNode(test_suite)
         self.model = TestTreeModel(root_node, self)
@@ -206,8 +199,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         """Expands all the collapsed elements in a tree starting at the root_node"""
         parent = root_node.parent()
         parent_idx = (
-            self.model.createIndex(
-                parent.row(), 0, parent) if parent else QModelIndex()
+            self.model.createIndex(parent.row(), 0, parent) if parent else QModelIndex()
         )
         index = self.model.index(root_node.row(), 0, parent_idx)
         self.test_view.setExpanded(index, True)
@@ -220,11 +212,10 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         test_suite = unittest.TestSuite()
 
         # Module test path
-        print('module test path: {}'.format(self.module_line.path))
+        print("module test path: {}".format(self.module_line.path))
 
         # Get all the tests
-        test_suite = mayaunittest.get_module_tests(
-            module_root=self.module_line.path)
+        test_suite = mayaunittest.get_module_tests(module_root=self.module_line.path)
 
         self.output_console.clear()
         self.model.run_tests(self.stream, test_suite)
@@ -245,7 +236,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         for path in paths:
             tokens = path.split(".")
             for i in range(len(tokens) - 1):
-                p = ".".join(tokens[0: i + 1])
+                p = ".".join(tokens[0 : i + 1])
                 if p in paths:
                     break
             else:
@@ -280,15 +271,15 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
         self.rollback_importer = RollbackImporter()
 
     def init_gui(self):
-        settings = QSettings('AutodeskMaya', 'Unit Test Runner')
+        settings = QSettings("AutodeskMaya", "Unit Test Runner")
 
         try:
-            self.restoreGeometry(settings.value('geometry'))
+            self.restoreGeometry(settings.value("geometry"))
         except AttributeError:
             pass
 
         try:
-            module_path = settings.value('module_path')
+            module_path = settings.value("module_path")
             self.module_line.path = module_path
         except Exception as e:
             print(e)
@@ -302,7 +293,7 @@ class MayaTestRunnerDialog(MayaQWidgetBaseMixin, QMainWindow):
 
         # Save the module path and widget position
         self.settings = QSettings("AutodeskMaya", "Unit Test Runner")
-        self.settings.setValue('module_path', self.module_line.path)
+        self.settings.setValue("module_path", self.module_line.path)
         self.settings.setValue("geometry", self.saveGeometry())
         QWidget.closeEvent(self, event)
 
@@ -568,7 +559,7 @@ class RollbackImporter(object):
         self.previous_modules = set(sys.modules.keys())
 
     def uninstall(self):
-        for modname in sys.modules.keys():
+        for modname in list(sys.modules.keys()):
             if modname not in self.previous_modules:
                 # Force reload when modname next imported
-                del (sys.modules[modname])
+                del sys.modules[modname]

@@ -1,6 +1,6 @@
-from PySide2 import QtCore, QtWidgets
-
 import os
+
+from PySide2 import QtCore, QtWidgets
 
 
 class FileLine(QtWidgets.QWidget):
@@ -21,8 +21,7 @@ class FileLine(QtWidgets.QWidget):
         self.line.setReadOnly(True)
         self.btn = QtWidgets.QPushButton()
         self.btn.setFixedHeight(20)
-        self.btn.setIcon(self.btn.style().standardIcon(
-            QtWidgets.QStyle.SP_DirIcon))
+        self.btn.setIcon(self.btn.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
 
         # Add Widgets
         main_layout.addWidget(self.line)
@@ -40,9 +39,9 @@ class FileLine(QtWidgets.QWidget):
         self.set_path(path)
 
     def btn_clicked(self):
-        """ The functionality of the button being clicked. 
-            We launch a file dialog and get the result. We send the path to the 
-            method that sets the rest if the widget and emits an update
+        """The functionality of the button being clicked.
+        We launch a file dialog and get the result. We send the path to the
+        method that sets the rest if the widget and emits an update
         """
 
         # Get the starting directory. If the path already exists, we use that
@@ -53,18 +52,17 @@ class FileLine(QtWidgets.QWidget):
             start_dir = os.path.expanduser("~")
 
         path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Set a Directory', start_dir, QtWidgets.QFileDialog.ShowDirsOnly)
+            self, "Set a Directory", start_dir, QtWidgets.QFileDialog.ShowDirsOnly
+        )
 
         self.set_path(path)
 
     def get_path(self):
-        """ Get the path
-        """
+        """Get the path"""
         return self.line.text()
 
     def set_path(self, path):
-        """ Set the path
-        """
+        """Set the path"""
         path = os.path.abspath(path)
         if os.path.exists(path):
             self.line.setText(path)
